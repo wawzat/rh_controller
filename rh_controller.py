@@ -163,6 +163,8 @@ def rh_log(logging_interval, log_start_time, humidifier_mode):
 
 
 def write_log(humidifier_mode):
+   '''Writes the Datetime, Measured RH Value and Huimidifier Mode to a csv file.'''
+
    row = datetime.now(), sensor.relative_humidity, sensor.temperature, humidifier_mode 
    with open('rh_log.csv', "a") as csv_file:
       writer = csv.writer(csv_file)
