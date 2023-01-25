@@ -20,11 +20,15 @@
    # https://github.com/adafruit/Adafruit_CircuitPython_seesaw
    # https://github.com/adafruit/Adafruit_CircuitPython_seesaw/blob/main/examples/seesaw_rotary_neopixel.py
    #   python -m pip install adafruit-circuitpython-seesaw
+   #
+   # For OpenWeatherMap - PyOWM
+   #   python -m pip install pyowm
+   #   https://github.com/csparpa/pyowm 
 
 # James S. Lucas
 # January 07, 2023
 
-'''Measures relative humidity and switches s 110V power strip according to a user defined setpoint. 
+'''Measures relative humidity and switches a 110V power strip according to a user defined setpoint. 
 Intent is to control a humidifier.
 
 Parts list in the code comments'''
@@ -33,6 +37,7 @@ Parts list in the code comments'''
 time_logging = False
 event_logging = True
 console_output = False
+use_owm = True
 # (seconds)
 heater_on_interval = 31
 heater_on_duration = 1
@@ -45,6 +50,7 @@ import sys
 from time import sleep
 from datetime import datetime
 import csv
+import config
 
 import board
 i2c = board.I2C()
@@ -80,6 +86,11 @@ GPIO.setup(relay_pin, GPIO.OUT)
 GPIO.output(relay_pin, GPIO.LOW)
 
 
+# Inititalize OpenWeatherMap (OWM)
+from pyowm import OWM
+owm = OWM(config.owm_key)
+mgr = owm.weather_manager()
+
 
 def check_position(last_position):
    '''Returns the position of a rotary encoder.
@@ -101,7 +112,7 @@ def check_position(last_position):
    return position
 
 
-def rh_control(position, humidifier_mode, event_logging):
+def rh_control(position, humidifier_mode, event_logging, use_owm):
    '''Compares the actual measured relative humidity to setpoint.
    
    Turns the power strip on and off with a range of +/-2 around setpoint.
@@ -112,13 +123,13 @@ def rh_control(position, humidifier_mode, event_logging):
       if humidifier_mode == 0:
          humidifier_mode = 1
          if event_logging:
-            write_log(humidifier_mode)
+            write_log(humidifier_mode, use_owm)
    elif round(sensor.relative_humidity) >= (position + round(RH_range / 2)):
       GPIO.output(relay_pin, GPIO.LOW)
       if humidifier_mode == 1:
          humidifier_mode = 0
          if event_logging:
-            write_log(humidifier_mode)
+            write_log(humidifier_mode, use_owm)
    return humidifier_mode
 
 
@@ -152,20 +163,28 @@ def heater_control(console_output, heater_start_time, heater_on_interval, heater
    return heater_start_time
 
 
-def rh_log(logging_interval, log_start_time, humidifier_mode):
+def rh_log(logging_interval, log_start_time, humidifier_mode, use_owm):
    '''Writes the Datetime, Measured RH Value and Huimidifier Mode to a csv file.'''
 
    log_td = datetime.now() - log_start_time
    if log_td.total_seconds() >= logging_interval:
-      write_log(humidifier_mode)
+      write_log(humidifier_mode, use_owm)
       log_start_time = datetime.now()
    return log_start_time
 
 
-def write_log(humidifier_mode):
+def write_log(humidifier_mode, use_owm):
    '''Writes the Datetime, Measured RH Value and Huimidifier Mode to a csv file.'''
 
-   row = datetime.now(), sensor.relative_humidity, sensor.temperature, humidifier_mode 
+   if use_owm:
+      try:
+         rh, temp = owm_check()
+      except TimeoutError:
+         rh = 'error'
+         temp = 'error'
+      row = datetime.now(), sensor.relative_humidity, sensor.temperature, humidifier_mode, rh, temp
+   else:
+      row = datetime.now(), sensor.relative_humidity, sensor.temperature, humidifier_mode
    with open('rh_log.csv', "a") as csv_file:
       writer = csv.writer(csv_file)
       writer.writerow(row)
@@ -202,6 +221,14 @@ def display_position(position, color):
          # Decrease the brightness.
          pixel.brightness = max(0, pixel.brightness - 0.1)
    return color
+
+
+def owm_check():
+   observation = mgr.weather_at_place('Jackson,US,WY')
+   w = observation.weather
+   ambient_rh = w.humidity
+   ambient_temp = w.temperature('fahrenheit')['temp']
+   return ambient_rh, ambient_temp
  
 
 try:
@@ -226,10 +253,10 @@ try:
          reading_start_time = datetime.now()
          if console_output:
             print("Humidity: %0.1f %%" % sensor.relative_humidity)
-         humidifier_mode = rh_control(position, humidifier_mode, event_logging)
+         humidifier_mode = rh_control(position, humidifier_mode, event_logging, use_owm)
          display_rh()
          if time_logging == True:
-            log_start_time = rh_log(logging_interval, log_start_time, humidifier_mode)
+            log_start_time = rh_log(logging_interval, log_start_time, humidifier_mode, use_owm)
 except KeyboardInterrupt:
    pixel.brightness = 0.0
    sensor.heater = False
