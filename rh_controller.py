@@ -91,7 +91,7 @@ GPIO.output(relay_pin, GPIO.LOW)
 from pyowm import OWM
 owm = OWM(config.owm_key)
 mgr = owm.weather_manager()
-import pyowm
+#import pyowm
 
 logging.basicConfig(filename='error.log')
 
@@ -139,13 +139,17 @@ def rh_control(position, humidifier_mode, event_logging, use_owm):
 def display_rh():
    '''Displays the measured RH on the last two digits of a four digit 7-segment display.'''
 
+   list_rh = []
+   list_rh.append('0')
    list_rh = [str(d) for d in str(round(sensor.relative_humidity))]
-   if len(list_rh) == 1:
-      display[2] = '0'
-      display[3] = list_rh[0]
-   elif len(list_rh) > 1:
-      display[2] = list_rh[0]
-      display[3] = list_rh[1]
+   display[2] = list_rh[0]
+   display[3] = list_rh[1]
+  #if len(list_rh) == 1:
+      #display[2] = '0'
+      #display[3] = list_rh[0]
+   #elif len(list_rh) > 1:
+      #display[2] = list_rh[0]
+      #display[3] = list_rh[1]
 
 
 def heater_control(console_output, heater_start_time, heater_on_interval, heater_on_duration):
@@ -193,13 +197,10 @@ def write_log(humidifier_mode, use_owm):
 def display_position(position, color):
    '''Displays the encoder position on the first two digits of a 7-segment display.'''
 
-   list_position = [str(d) for d in str(position)]
-   if position < 10:
-      display[0] = '0'
-      display[1] = list_position[0]
-   elif position > 9:
-      display[0] = list_position[0]
-      display[1] = list_position[1]
+   first_digit = str(position // 10)
+   second_digit = str(position % 10)
+   display[0] = first_digit
+   display[1] = second_digit
    if switch.value:
       # Change the LED color.
       # Advance forward through the colorwheel.
