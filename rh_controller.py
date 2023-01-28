@@ -136,22 +136,6 @@ def rh_control(position, humidifier_mode, event_logging, use_owm):
    return humidifier_mode
 
 
-def old_display_rh():
-   '''Displays the measured RH on the last two digits of a four digit 7-segment display.'''
-
-   list_rh = []
-   list_rh.append('0')
-   list_rh = [str(d) for d in str(round(sensor.relative_humidity))]
-   display[2] = list_rh[0]
-   display[3] = list_rh[1]
-  #if len(list_rh) == 1:
-      #display[2] = '0'
-      #display[3] = list_rh[0]
-   #elif len(list_rh) > 1:
-      #display[2] = list_rh[0]
-      #display[3] = list_rh[1]
-
-
 def display_rh():
    '''Displays the measured RH on the last two digits of a four digit 7-segment display.'''
 
