@@ -51,6 +51,7 @@ from time import sleep
 from datetime import datetime
 import csv
 import config
+import logging
 
 import board
 i2c = board.I2C()
@@ -90,7 +91,9 @@ GPIO.output(relay_pin, GPIO.LOW)
 from pyowm import OWM
 owm = OWM(config.owm_key)
 mgr = owm.weather_manager()
+import pyowm
 
+logging.basicConfig(filename='error.log')
 
 def check_position(last_position):
    '''Returns the position of a rotary encoder.
@@ -177,11 +180,7 @@ def write_log(humidifier_mode, use_owm):
    '''Writes the Datetime, Measured RH Value and Huimidifier Mode to a csv file.'''
 
    if use_owm:
-      try:
-         rh, temp = owm_check()
-      except TimeoutError:
-         rh = 'error'
-         temp = 'error'
+      rh, temp = owm_check()
       row = datetime.now(), sensor.relative_humidity, sensor.temperature, humidifier_mode, rh, temp
    else:
       row = datetime.now(), sensor.relative_humidity, sensor.temperature, humidifier_mode
@@ -224,10 +223,16 @@ def display_position(position, color):
 
 
 def owm_check():
-   observation = mgr.weather_at_place('Jackson,US,WY')
-   w = observation.weather
-   ambient_rh = w.humidity
-   ambient_temp = w.temperature('fahrenheit')['temp']
+   try:
+      observation = mgr.weather_at_place('Jackson,US,WY')
+      w = observation.weather
+      ambient_rh = w.humidity
+      ambient_temp = w.temperature('fahrenheit')['temp']
+   except Exception as e:
+      print(e.message, e.args)
+      logging.exception("RH_Log OWM Error:\n%s" % e)
+      ambient_rh = 'error'
+      ambient_temp = 'error'
    return ambient_rh, ambient_temp
  
 
