@@ -4,3 +4,4 @@ owm_test.py
 old_rh_log.csv
 error.log
 config.cpython-39.pyc
+__pycache__
