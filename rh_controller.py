@@ -26,7 +26,7 @@
    #   https://github.com/csparpa/pyowm 
 
 # James S. Lucas
-# January 07, 2023
+# January 29, 2023
 
 '''Measures relative humidity and switches a 110V power strip according to a user defined setpoint. 
 Intent is to control a humidifier.
@@ -39,7 +39,7 @@ event_logging = True
 console_output = False
 use_owm = True
 # (seconds)
-heater_on_interval = 31
+heater_on_interval = 61
 heater_on_duration = 1
 reading_interval = 3
 logging_interval = 300
@@ -95,7 +95,7 @@ mgr = owm.weather_manager()
 
 logging.basicConfig(filename='error.log')
 
-def check_position(last_position):
+def check_enc_position(last_position):
    '''Returns the position of a rotary encoder.
    
    Limts the encoder range to between 0 - 99 inclusively.'''
@@ -118,7 +118,7 @@ def check_position(last_position):
 def rh_control(position, humidifier_mode, event_logging, use_owm):
    '''Compares the actual measured relative humidity to setpoint.
    
-   Turns the power strip on and off with a range of +/-2 around setpoint.
+   Turns the power strip on and off with a range of +/- RH_range around setpoint.
    Returns humidifier mode for logging. '''
 
    if round(sensor.relative_humidity) <= (position - round(RH_range / 2)):
@@ -236,12 +236,12 @@ try:
   log_start_time = datetime.now()
   encoder.position = 0
   last_position = 0
-  position = check_position(last_position)
+  position = check_enc_position(last_position)
   color = display_position(position, color)
   humidifier_mode = 0
   while True:
       sleep(0.01)
-      position = check_position(last_position)
+      position = check_enc_position(last_position)
       if position != last_position:
          color = display_position(position, color)
       last_position = position
