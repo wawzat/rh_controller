@@ -79,6 +79,11 @@ last_position = -1
 # start at red
 color = 0
 
+#Initialize Motor Hat
+from adafruit_motorkit import MotorKit
+from adafruit_motor import stepper
+kit = MotorKit(address=0x60)
+
 # Initialize GPIO
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
@@ -223,7 +228,7 @@ def owm_check():
       ambient_rh = w.humidity
       ambient_temp = w.temperature('fahrenheit')['temp']
    except Exception as e:
-      print(e.message, e.args)
+      print("owm_check() exception:", e)
       logging.exception("RH_Log OWM Error:\n%s" % e)
       ambient_rh = 'error'
       ambient_temp = 'error'
